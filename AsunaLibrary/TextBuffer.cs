@@ -2,6 +2,7 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -9,7 +10,7 @@ namespace AsunaLibrary
 {
     public unsafe class TextBuffer : ITextBuffer
     {
-        private const int _fiveMegaBytes = 1024 * 1024 * 5; //5.242.880 bytes (5Mb)
+        private const int FIVE_MEGABYTES = 1024 * 1024 * 5; //5.242.880 bytes (5Mb)
 
         private IntPtr _mAllocOriginalTextPtr;
         private int _originalTextLength;
@@ -21,60 +22,10 @@ namespace AsunaLibrary
         private int _normalizedTextSizeInBytes;
         private char* _normalizedTextPtr;
 
-        private IntPtr _mAllocWordsPtr;
-        private int _wordsLength;
-        private int _wordsSizeInBytes;
-        private Word* _wordsPtr;
-        //private Word* _wordsPtrHead;
-
-        private int TotalAllocatedMemory => _wordsSizeInBytes + _normalizedTextSizeInBytes + _originalTextSizeInBytes;
+        private int TotalAllocatedMemory => _normalizedTextSizeInBytes + _originalTextSizeInBytes;
         private string _text = null;
 
         private bool _disposed;
-
-        private void MAllocChars(char[] chars)
-        {
-            _originalTextLength = chars.Length;
-            _originalTextSizeInBytes = Marshal.SizeOf<char>() * _originalTextLength;
-            _mAllocOriginalTextPtr = Marshal.AllocHGlobal(_originalTextSizeInBytes);
-            Marshal.Copy(chars, 0, _mAllocOriginalTextPtr, _originalTextLength);
-            _originalTextPtr = (char*)_mAllocOriginalTextPtr;
-
-            char[] normalizedText = Helpers.RemoveAccent(GetText()).ToLowerInvariant().ToCharArray();
-
-            _normalizedTextLength = normalizedText.Length;
-            _normalizedTextSizeInBytes = Marshal.SizeOf<char>() * _normalizedTextLength;
-            _mAllocNormalizedTextPtr = Marshal.AllocHGlobal(_normalizedTextSizeInBytes);
-            Marshal.Copy(normalizedText, 0, _mAllocNormalizedTextPtr, _normalizedTextLength);
-            _normalizedTextPtr = (char*)_mAllocNormalizedTextPtr;
-
-            ReadOnlySpan<StringIndexAndLength> wordsPositions = Helpers.GetWordsPositions(_originalTextPtr, _originalTextLength);
-
-            _wordsLength = wordsPositions.Length;
-            _wordsSizeInBytes = Marshal.SizeOf<Word>() * _wordsLength;
-            _mAllocWordsPtr = Marshal.AllocHGlobal(_wordsSizeInBytes);
-            _wordsPtr = (Word*)_mAllocWordsPtr;
-            //_wordsPtrHead = _wordsPtr;
-
-            for (int i = 0; i < _wordsLength; i++)
-            {
-                var w = new Word
-                {
-                    WordPtr = &_originalTextPtr[wordsPositions[i].Index],
-                    Count = i + 1,
-                    Index = i,
-                    Length = wordsPositions[i].Length,
-                    Column = wordsPositions[i].Column,
-                    Line = wordsPositions[i].Line
-                };
-                _wordsPtr[i] = w;
-                //_wordsPtr++;
-            }
-            //_wordsPtr = _wordsPtrHead;
-
-            if (TotalAllocatedMemory > _fiveMegaBytes)
-                GC.AddMemoryPressure(TotalAllocatedMemory);
-        }
 
         public TextBuffer(char[] text)
         {
@@ -91,10 +42,47 @@ namespace AsunaLibrary
             MAllocChars(text.ToCharArray());
         }
 
-        public static TextBuffer FromStream(Stream textStream, Encoding encoding)
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+       /* aki:
+            sadf
+            sdfas
+            df
+            asd*/
+
+        private void MAllocChars(char[] chars)
         {
-            //just in case...
-            //textStream.Position = 0;
+            var latin1_ISO_8859_1 = Encoding.GetEncoding(28591);
+
+            var bytes = latin1_ISO_8859_1.GetBytes(chars);
+
+            _originalTextLength = chars.Length;
+            _originalTextSizeInBytes = sizeof(char) * _originalTextLength;
+            //Several days were lost here trying to figure out why the app was crashing here.
+            //The reason: Marshal.SizeOf<char>() is returning 1, which is wrong. Should return 2.
+            //Instead, I am now using sizeof(char)
+
+            _mAllocOriginalTextPtr = Marshal.AllocHGlobal(_originalTextSizeInBytes);
+            Marshal.Copy(chars, 0, _mAllocOriginalTextPtr, _originalTextLength);
+            _originalTextPtr = (char*)_mAllocOriginalTextPtr;
+
+            
+            char[] normalizedText = Helpers.RemoveAccent(GetText()).ToLowerInvariant().ToCharArray();
+
+            _normalizedTextLength = normalizedText.Length;
+            _normalizedTextSizeInBytes = sizeof(char) * _normalizedTextLength;
+            _mAllocNormalizedTextPtr = Marshal.AllocHGlobal(_normalizedTextSizeInBytes);
+            Marshal.Copy(normalizedText, 0, _mAllocNormalizedTextPtr, _normalizedTextLength);
+            _normalizedTextPtr = (char*)_mAllocNormalizedTextPtr;
+
+            if (TotalAllocatedMemory > FIVE_MEGABYTES)
+                GC.AddMemoryPressure(TotalAllocatedMemory);
+        }
+
+
+        public static TextBuffer FromStream(Stream textStream, Encoding encoding = null)
+        {
+            if (encoding == null)
+                encoding = Encoding.UTF8;
 
             var buffer = ArrayPool<char>.Shared.Rent(2048);
             try
@@ -130,11 +118,13 @@ namespace AsunaLibrary
             }
         }
 
-        public static TextBuffer FromFile(string filePath, Encoding encoding)
+        public static TextBuffer FromFile(string filePath, Encoding encoding = null)
         {
+            if (encoding == null)
+                encoding = Encoding.UTF8;
+
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 return FromStream(fs, encoding);
-            //using (var bs = new BufferedStream(fs))
         }
 
         public string GetText()
@@ -154,21 +144,33 @@ namespace AsunaLibrary
 
         public void Dispose()
         {
+            Dispose(true);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             if (_disposed)
                 return;
 
             _disposed = true;
-
-            Marshal.FreeHGlobal(_mAllocOriginalTextPtr);
-            Marshal.FreeHGlobal(_mAllocNormalizedTextPtr);
-            Marshal.FreeHGlobal(_mAllocWordsPtr);
-
             _text = null;
 
-            if (TotalAllocatedMemory > _fiveMegaBytes)
+            if (_mAllocOriginalTextPtr != IntPtr.Zero)
+                Marshal.FreeHGlobal(_mAllocOriginalTextPtr);
+
+            if (_mAllocNormalizedTextPtr != IntPtr.Zero)
+                Marshal.FreeHGlobal(_mAllocNormalizedTextPtr);
+
+            if (TotalAllocatedMemory > FIVE_MEGABYTES)
                 GC.RemoveMemoryPressure(TotalAllocatedMemory);
 
-            GC.SuppressFinalize(this);
+            if(disposing)
+                GC.SuppressFinalize(this);
+        }
+
+        ~TextBuffer()
+        {
+            Dispose(false);
         }
     }
 }

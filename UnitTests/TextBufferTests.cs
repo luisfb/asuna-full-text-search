@@ -5,24 +5,57 @@ namespace UnitTests
 {
     public class TextBufferTests
     {
-        [Fact(DisplayName = "Teste de referencia ToString")]
-        public void aaa()
+        #region ARRANGE
+
+        private TextBuffer GivenATextBufferFromFile()
         {
-            using (ITextBuffer tb = new TextBuffer("String Teste para refêrencia em memória."))
-            {
+            return TextBuffer.FromFile(FixtureHelper.GetLoremIpsumTextFilePath());
+        }
 
-                var str1 = tb.GetText();
-                var str2 = tb.GetText();
-                var str3 = tb.GetText();
+        private TextBuffer GivenATextBuffer()
+        {
+            return new TextBuffer(FixtureHelper.GetLoremIpsumTxtContent());
+        }
 
-             //  var aa = new String()
+        #endregion
 
-                object.ReferenceEquals(str1, str2).Should().BeTrue();
-                object.ReferenceEquals(str1, str3).Should().BeTrue();
+        #region ACT
 
-               // Asuna.FullTextSearch("asuna", tb);
+        private string WhenGetTextIsCalled(ITextBuffer textBuffer)
+        {
+            return textBuffer.GetText();
+        }
 
-            }
+        #endregion
+
+        #region ASSERT
+
+        #endregion
+
+        [Fact(DisplayName = "Should Return The Same String when compared to the original text file.")]
+        public void GivenATextBufferFromFile_WhenGetTextIsCalled_ThenShouldReturnAStringEqualsToTheOriginal()
+        {
+            string originalText = FixtureHelper.GetLoremIpsumTxtContent();
+            ITextBuffer tb = GivenATextBufferFromFile();
+            string textFromBuffer = WhenGetTextIsCalled(tb);
+
+            object.ReferenceEquals(originalText, textFromBuffer).Should().BeFalse();
+            (originalText == textFromBuffer).Should().BeTrue();
+
+        }
+
+        [Fact(DisplayName = "Should Always Return The Same String Object.")]
+        public void GivenATextBuffer_WhenGetTextIsCalled_ThenShouldReturnAlwaysTheSameStringObject()
+        {
+            ITextBuffer tb = GivenATextBuffer();
+
+            var str1 = WhenGetTextIsCalled(tb);
+            var str2 = WhenGetTextIsCalled(tb);
+            var str3 = WhenGetTextIsCalled(tb);
+
+            object.ReferenceEquals(str1, str2).Should().BeTrue();
+            object.ReferenceEquals(str1, str3).Should().BeTrue();
+
         }
     }
 }

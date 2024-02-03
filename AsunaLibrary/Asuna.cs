@@ -56,7 +56,7 @@ namespace AsunaLibrary
                     Index = item.Index,
                     Length = item.Length,
                     Ranking = distance,
-                    Match = textSpan.Slice(item.Index, item.Length).ToString(),
+                    Match = textSpan.Slice(item.Index, item.Length).ToString(), //Fazer isso sob demanda. Gerar a string para todas as palavras vai reduzir a performance
                     LineNumber = item.Line,
                     ColumnNumber = item.Column
                 };
@@ -93,6 +93,7 @@ namespace AsunaLibrary
         {
             return null;
             //TODO buffer.GetText() must not be used here
+            buffer.GetOriginalText
         }
     }
 

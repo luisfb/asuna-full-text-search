@@ -15,7 +15,7 @@ namespace AsunaLibrary.Core
         internal static byte[] StringToByte(string text)
         {
             if (text == null)
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
 
             return _latin1_ISO_8859_1.GetBytes(text);
         }
@@ -23,7 +23,7 @@ namespace AsunaLibrary.Core
         internal static string RemoveAccent(string text)
         {
             if (text == null)
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
 
             var normalizedString = text.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
@@ -45,11 +45,10 @@ namespace AsunaLibrary.Core
         }
         internal static unsafe ReadOnlySpan<StringIndexAndLength> GetWordsPositions(char* c, int length)
         {
-            char space = ' ';
-            char newLine = '\n';
-            char carriageReturn = '\r';
+            const char space = ' ';
+            const char newLine = '\n';
+            const char carriageReturn = '\r';
             bool containsCarriageReturn = false;
-            //int length = str.Length;
 
             int currentWordIndex = -1;
             int currentLine = 1;
