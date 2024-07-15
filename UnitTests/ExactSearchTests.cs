@@ -58,7 +58,10 @@ namespace UnitTests
         [Fact]
         public void teste()
         {
-            var filePath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Lorem ipsum.txt");
+            var dir1 = Directory.GetCurrentDirectory();
+            //var dir2 = AppDomain.CurrentDomain.BaseDirectory;
+
+            var filePath = System.IO.Path.Combine(dir1, "Fixture", "Lorem ipsum.txt");
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 using (var bs = new BufferedStream(fs))

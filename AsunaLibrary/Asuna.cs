@@ -11,15 +11,18 @@ namespace AsunaLibrary
         {
             byte[] queryStringBytes;
             byte[] textBytes;
+            var normalizedQuery = Helpers.RemoveDiacritics(queryString);
+            var normalizedText = Helpers.RemoveDiacritics(text);
+
             if (options == SearchOptions.IgnoreCase)
             {
-                queryStringBytes = Helpers.StringToByte(Helpers.RemoveAccent(queryString).ToLowerInvariant());
-                textBytes = Helpers.StringToByte(Helpers.RemoveAccent(text).ToLowerInvariant());
+                queryStringBytes = Helpers.StringToByte(normalizedQuery.ToLowerInvariant());
+                textBytes = Helpers.StringToByte(normalizedText.ToLowerInvariant());
             }
             else
             {
-                queryStringBytes = Helpers.StringToByte(Helpers.RemoveAccent(queryString));
-                textBytes = Helpers.StringToByte(Helpers.RemoveAccent(text));
+                queryStringBytes = Helpers.StringToByte(normalizedQuery);
+                textBytes = Helpers.StringToByte(normalizedText);
             }
 
             //TODO
@@ -29,9 +32,9 @@ namespace AsunaLibrary
             return UnsafeExactSearch.Search(queryStringBytes, textBytes);
         }
 
-        public static ICollection<FullTextSearchResult> FullTextSearch(string queryString, string text)
+        public static ICollection<FullTextSearchResult> FullTextSearch(string queryString, string text, int resultsLimit = 10)
         {
-            string normalizedText = Helpers.RemoveAccent(text).ToLower();
+            string normalizedText = Helpers.RemoveDiacritics(text).ToLower();
             //string[] strArr = normalizedText.Split(' ', StringSplitOptions.None);
 
             ReadOnlySpan<char> textSpan = normalizedText.AsSpan();
@@ -40,7 +43,7 @@ namespace AsunaLibrary
 
             //ATENÇÃO: APLICAR O AND OU O OR AQUI
             // LEMBRAR QUE NA queryString PODE TER ESPAÇO, OU SEJA, MAIS DE UMA PALAVRA
-            ReadOnlySpan<char> querySpan = Helpers.RemoveAccent(queryString).ToLower().AsSpan();
+            ReadOnlySpan<char> querySpan = Helpers.RemoveDiacritics(queryString).ToLower().AsSpan();
 
             var wordsPositions = Helpers.GetWordsPositions(textSpan, textSpan.Length);
             //var wordsPositions = Helpers.GetWordsPositions_chatGptVersion(normalizedText);
@@ -64,7 +67,7 @@ namespace AsunaLibrary
                 //var p = textSpan.Slice(item.Index, item.Length);
 
             }
-            return results.OrderBy(x => x.Ranking).ThenBy(x => x.Index).ToList();
+            return results.OrderBy(x => x.Ranking).ThenBy(x => x.Index).Take(resultsLimit).ToList();
             //return results;
 
             //SearchResult[] sss = strArr.Select(x => new SearchResult {  })
@@ -93,7 +96,7 @@ namespace AsunaLibrary
         {
             return null;
             //TODO buffer.GetText() must not be used here
-            buffer.GetOriginalText
+           // buffer.GetOriginalText
         }
     }
 

@@ -7,10 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AsunaLibrary", "AsunaLibrar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\UnitTests.csproj", "{310667C3-086E-4EFE-B77E-F704B787087E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProject1", "TestProject1\TestProject1.csproj", "{42A335AD-AF8D-4524-82FC-761D08A24ED1}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsTestProj", "MsTestProj\MsTestProj.csproj", "{F84BDB6C-A5CA-4609-AACE-2CCF8DC29DEE}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,14 +21,6 @@ Global
 		{310667C3-086E-4EFE-B77E-F704B787087E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{310667C3-086E-4EFE-B77E-F704B787087E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{310667C3-086E-4EFE-B77E-F704B787087E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{42A335AD-AF8D-4524-82FC-761D08A24ED1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{42A335AD-AF8D-4524-82FC-761D08A24ED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{42A335AD-AF8D-4524-82FC-761D08A24ED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{42A335AD-AF8D-4524-82FC-761D08A24ED1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F84BDB6C-A5CA-4609-AACE-2CCF8DC29DEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F84BDB6C-A5CA-4609-AACE-2CCF8DC29DEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F84BDB6C-A5CA-4609-AACE-2CCF8DC29DEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F84BDB6C-A5CA-4609-AACE-2CCF8DC29DEE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

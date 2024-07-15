@@ -12,6 +12,7 @@ namespace AsunaLibrary
     {
         private const int FIVE_MEGABYTES = 1024 * 1024 * 5; //5.242.880 bytes (5Mb)
 
+        //TODO remove
         private IntPtr _mAllocOriginalTextPtr;
         private int _originalTextLength;
         private int _originalTextSizeInBytes;
@@ -42,13 +43,6 @@ namespace AsunaLibrary
             MAllocChars(text.ToCharArray());
         }
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-       /* aki:
-            sadf
-            sdfas
-            df
-            asd*/
-
         private void MAllocChars(char[] chars)
         {
             var latin1_ISO_8859_1 = Encoding.GetEncoding(28591);
@@ -65,8 +59,8 @@ namespace AsunaLibrary
             Marshal.Copy(chars, 0, _mAllocOriginalTextPtr, _originalTextLength);
             _originalTextPtr = (char*)_mAllocOriginalTextPtr;
 
-            
-            char[] normalizedText = Helpers.RemoveAccent(GetText()).ToLowerInvariant().ToCharArray();
+            //TODO: change the way I store the original text. I must preserve the original encoding. GetText() should not be called.
+            char[] normalizedText = Helpers.RemoveDiacritics(GetText()).ToLowerInvariant().ToCharArray();
 
             _normalizedTextLength = normalizedText.Length;
             _normalizedTextSizeInBytes = sizeof(char) * _normalizedTextLength;
@@ -127,6 +121,7 @@ namespace AsunaLibrary
                 return FromStream(fs, encoding);
         }
 
+        [Obsolete]
         public string GetText()
         {
             return _text ??= new string(_originalTextPtr, 0, _originalTextLength);

@@ -20,7 +20,8 @@ namespace AsunaLibrary.Core
             return _latin1_ISO_8859_1.GetBytes(text);
         }
 
-        internal static string RemoveAccent(string text)
+        //TODO: Implement a better way, a more performatic algorithm, to remove diacritics/accents:
+        internal static string RemoveDiacritics(string text)
         {
             if (text == null)
                 throw new ArgumentNullException(nameof(text));
@@ -36,6 +37,12 @@ namespace AsunaLibrary.Core
             }
 
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        internal static string ConvertToLatin1(string text)
+        {
+            var latin1_text = _latin1_ISO_8859_1.GetBytes(text);
+            return _latin1_ISO_8859_1.GetString(latin1_text);
         }
 
         internal static unsafe ReadOnlySpan<StringIndexAndLength> GetWordsPositions(ReadOnlySpan<char> str, int length)
