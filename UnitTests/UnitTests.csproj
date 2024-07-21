@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AsunaLibrary\AsunaLibrary.csproj" />
+    <ProjectReference Include="..\AsunaLibrary\AsunaLocalSearch.csproj" />
   </ItemGroup>
 
   <ItemGroup>

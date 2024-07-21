@@ -1,4 +1,4 @@
-﻿using AsunaLibrary.Core;
+﻿using AsunaLocalSearch.Core;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;

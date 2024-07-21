@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AsunaLibrary.Core
+namespace AsunaLocalSearch.Core
 {
     internal static unsafe class UnsafeExactSearch
     {

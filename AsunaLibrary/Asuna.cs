@@ -1,12 +1,19 @@
-﻿using AsunaLibrary.Core;
+﻿using AsunaLocalSearch.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AsunaLibrary
+namespace AsunaLocalSearch
 {
     public static class Asuna
     {
+        /// <summary>
+        /// Performs an exact search without use of indexes
+        /// </summary>
+        /// <param name="queryString"></param>
+        /// <param name="text"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
         public static IEnumerable<SearchResult> Search(string queryString, string text, SearchOptions options = SearchOptions.IgnoreCase)
         {
             byte[] queryStringBytes;

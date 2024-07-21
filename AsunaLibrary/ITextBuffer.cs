@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AsunaLibrary
+namespace AsunaLocalSearch
 {
     public interface ITextBuffer : IDisposable
     {

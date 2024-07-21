@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace AsunaLibrary.Core
+namespace AsunaLocalSearch.Core
 {
     //TODO Create unit tests for each method of this class
     internal static class Helpers

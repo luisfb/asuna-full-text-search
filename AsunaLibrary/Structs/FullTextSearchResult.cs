@@ -1,4 +1,4 @@
-﻿namespace AsunaLibrary
+﻿namespace AsunaLocalSearch
 {
     public struct FullTextSearchResult
     {

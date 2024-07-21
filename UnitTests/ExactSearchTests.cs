@@ -1,4 +1,4 @@
-using AsunaLibrary;
+using AsunaLocalSearch;
 using FluentAssertions;
 using System.Diagnostics;
 using System.Text;

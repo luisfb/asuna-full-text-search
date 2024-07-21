@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AsunaLibrary.Core
+namespace AsunaLocalSearch.Core
 {
     internal static unsafe class UnsafeLevenshtein
     {

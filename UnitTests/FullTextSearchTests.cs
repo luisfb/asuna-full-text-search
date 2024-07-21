@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AsunaLibrary;
+using AsunaLocalSearch;
 using FluentAssertions;
 using System.Diagnostics;
 
