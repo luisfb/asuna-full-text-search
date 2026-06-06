@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace AsunaLocalSearch
 {
@@ -66,21 +67,22 @@ namespace AsunaLocalSearch
                     Index = item.Index,
                     Length = item.Length,
                     Ranking = distance,
-                    Match = textSpan.Slice(item.Index, item.Length).ToString(), //Fazer isso sob demanda. Gerar a string para todas as palavras vai reduzir a performance
                     LineNumber = item.Line,
                     ColumnNumber = item.Column
                 };
                 results[i++] = searchResult;
                 //var p = textSpan.Slice(item.Index, item.Length);
-
             }
-            return results.OrderBy(x => x.Ranking).ThenBy(x => x.Index).Take(resultsLimit).ToList();
+            var filteredList = results.OrderBy(x => x.Ranking).ThenBy(x => x.Index).Take(resultsLimit).ToList();
+            foreach (var item in filteredList)
+                item.Match = textSpan.Slice(item.Index, item.Length).ToString();
+
+            return filteredList;
+            
+
             //return results;
 
             //SearchResult[] sss = strArr.Select(x => new SearchResult {  })
-
-
-
 
             //            byte[] textBytes = Helpers.StringToByte(normalizedText);
             /*
@@ -96,6 +98,9 @@ namespace AsunaLocalSearch
 
         public static IEnumerable<SearchResult> Search(string queryString, ITextBuffer buffer)
         {
+            var text = buffer.GetNormalizedText();
+            var queryTxt = Helpers.StringToByte(queryString);
+            UnsafeExactSearch.Search(queryTxt, text);
             return null;
         }
 

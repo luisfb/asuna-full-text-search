@@ -1,87 +1,80 @@
-﻿using AsunaLibrary.Core;
+﻿using AsunaLocalSearch.Core;
 using System;
 using System.Buffers;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Security;
 
-namespace AsunaLibrary
+namespace AsunaLocalSearch
 {
     public unsafe class TextBuffer : ITextBuffer
     {
-        private const int FIVE_MEGABYTES = 1024 * 1024 * 5; //5.242.880 bytes (5Mb)
+        //private const int FIVE_MEGABYTES = 1024 * 1024 * 5; //5.242.880 bytes (5Mb)
+        private const int ONE_MEGABYTE = 1024 * 1024; //1.048.576 bytes (1Mb)
 
-        //TODO remove
-        private IntPtr _mAllocOriginalTextPtr;
-        private int _originalTextLength;
-        private int _originalTextSizeInBytes;
-        private char* _originalTextPtr;
+        //private static Encoding _latin1_ISO_8859_1 = Encoding.GetEncoding(28591);
+
+        //TODO: use One megabyte, to cover cases where multiple Text Byffers are used
+        //private const int ONE_MEGABYTE = 1024 * 1024;
+
+        //TODO nao aplicar limite. Sempre usar AddMemoryPressure independente da alocação. Devo considerar cenarios com multiplos text buffers que permanecerão vivos por um longo periodo de tempo.
+        //Desenvolver possibilidade de usar o text buffer com indexes
+
+
+        /* 
+         The AddMemoryPressure and RemoveMemoryPressure methods improve performance only for types that exclusively depend on finalizers to release the unmanaged resources.
+        It's not necessary to use these methods in types that follow the dispose pattern, where finalizers are used to clean up unmanaged resources only in the event that a consumer of the type forgets to call Dispose.
+         */
 
         private IntPtr _mAllocNormalizedTextPtr;
         private int _normalizedTextLength;
         private int _normalizedTextSizeInBytes;
-        private char* _normalizedTextPtr;
+        private byte* _normalizedTextPtr;
 
-        private int TotalAllocatedMemory => _normalizedTextSizeInBytes + _originalTextSizeInBytes;
-        private string _text = null;
+        private int TotalAllocatedMemory => _normalizedTextSizeInBytes; // + _originalTextSizeInBytes;
+        private string _originalText;
+        public string Text => _originalText;
 
         private bool _disposed;
 
-        public TextBuffer(char[] text)
-        {
-            MAllocChars(text);
-        }
-
-        public TextBuffer(ReadOnlySpan<char> text)
-        {
-            MAllocChars(text.ToArray());
-        }
 
         public TextBuffer(string text)
         {
-            MAllocChars(text.ToCharArray());
+            _originalText = text;
+            MAllocChars();
         }
 
-        private void MAllocChars(char[] chars)
+        private TextBuffer(ReadOnlySpan<char> text)
         {
-            var latin1_ISO_8859_1 = Encoding.GetEncoding(28591);
+            _originalText = text.ToString();
+            MAllocChars();
+        }
 
-            var bytes = latin1_ISO_8859_1.GetBytes(chars);
+        private void MAllocChars()
+        {
+            byte[] normalizedText = Helpers.Latin1_ISO_8859_1.GetBytes(Helpers.RemoveDiacritics(_originalText).ToLowerInvariant());
 
-            _originalTextLength = chars.Length;
-            _originalTextSizeInBytes = sizeof(char) * _originalTextLength;
-            //Several days were lost here trying to figure out why the app was crashing here.
-            //The reason: Marshal.SizeOf<char>() is returning 1, which is wrong. Should return 2.
-            //Instead, I am now using sizeof(char)
-
-            _mAllocOriginalTextPtr = Marshal.AllocHGlobal(_originalTextSizeInBytes);
-            Marshal.Copy(chars, 0, _mAllocOriginalTextPtr, _originalTextLength);
-            _originalTextPtr = (char*)_mAllocOriginalTextPtr;
-
-            //TODO: change the way I store the original text. I must preserve the original encoding. GetText() should not be called.
-            char[] normalizedText = Helpers.RemoveDiacritics(GetText()).ToLowerInvariant().ToCharArray();
+            //preciso dar throw exception se tiver algum caractere multi byte na string, senao o resultado da busca pode indicar um index errado.
 
             _normalizedTextLength = normalizedText.Length;
-            _normalizedTextSizeInBytes = sizeof(char) * _normalizedTextLength;
+            _normalizedTextSizeInBytes = Marshal.SizeOf<byte>() * _normalizedTextLength;
             _mAllocNormalizedTextPtr = Marshal.AllocHGlobal(_normalizedTextSizeInBytes);
             Marshal.Copy(normalizedText, 0, _mAllocNormalizedTextPtr, _normalizedTextLength);
-            _normalizedTextPtr = (char*)_mAllocNormalizedTextPtr;
+            _normalizedTextPtr = (byte*)_mAllocNormalizedTextPtr;
 
-            if (TotalAllocatedMemory > FIVE_MEGABYTES)
+            if (TotalAllocatedMemory > ONE_MEGABYTE)
                 GC.AddMemoryPressure(TotalAllocatedMemory);
         }
 
-
-        public static TextBuffer FromStream(Stream textStream, Encoding encoding = null)
+        public static TextBuffer FromStream(Stream textStream)
         {
-            if (encoding == null)
-                encoding = Encoding.UTF8;
-
+            //TODO: test if it will be needed to read the stream in UTF-8 and after that convert to latin1
             var buffer = ArrayPool<char>.Shared.Rent(2048);
             try
             {
-                using (var sr = new StreamReader(textStream, encoding))
+                using (var sr = new StreamReader(textStream, Helpers.Latin1_ISO_8859_1))
                 {
                     int read = 0;
                     int offset = 0;
@@ -101,10 +94,12 @@ namespace AsunaLibrary
                     if (offset > 0)
                         return new TextBuffer(buffer.AsSpan(0, offset));
 
-                    //throw exception
-                    return null;
-                    
+                    throw new EndOfStreamException("The provided stream has no length.");
                 }
+            }
+            catch
+            {
+                throw;
             }
             finally
             {
@@ -112,30 +107,48 @@ namespace AsunaLibrary
             }
         }
 
+
+        /// <summary>
+        /// Initializes a new instance of the AsunaLocalSearch.TextBuffer with the content of the specified filePath.
+        /// </summary>
+        /// <param name="filePath">Path to a text file.</param>
+        /// <param name="encoding">The file enconding. If not specified, UTF-8 will be used as enconding to read the file.</param>
+        /// <returns>An instance of AsunaLocalSearch.TextBuffer with the content of the specified filePath.</returns>
+        /// <exception cref="ArgumentNullException">filePath is null</exception>
+        /// <exception cref="ArgumentException">filePath is an empty string (""), contains only white space, or contains one or more invalid characters. -or- path refers to a non-file device such as "con:", "com1:", "lpt1:", etc. in an NTFS environment.</exception>
+        /// <exception cref="NotSupportedException">filePath refers to a non-file device, such as "con:", "com1:", "lpt1:", etc. in a non-NTFS environment.</exception>
+        /// <exception cref="FileNotFoundException">The filePath cannot be found, such as when mode is FileMode.Truncate or FileMode.Open, and the file specified by path does not exist. The file must already exist in these modes.</exception>
+        /// <exception cref="SecurityException">The caller does not have the required permission.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified filePath is invalid, such as being on an unmapped drive.</exception>
+        /// <exception cref="PathTooLongException">The specified filePath, file name, or both exceed the system-defined maximum length.</exception>
         public static TextBuffer FromFile(string filePath, Encoding encoding = null)
         {
             if (encoding == null)
                 encoding = Encoding.UTF8;
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                return FromStream(fs, encoding);
+                return FromStream(fs);
         }
 
-        [Obsolete]
-        public string GetText()
+        /// <summary>
+        /// Returns a lower-case version of the text contained in the buffer with all diacritics/accents removed.
+        /// </summary>
+        /// <returns>A ReadOnlySpan of byte containing a read-only reference to the internal normalized version of the original text.</returns>
+        /// <exception cref="ObjectDisposedException">The object is already disposed and therefore not available.</exception>
+        public ReadOnlySpan<byte> GetNormalizedText()
         {
-            return _text ??= new string(_originalTextPtr, 0, _originalTextLength);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().FullName);
+
+            return new ReadOnlySpan<byte>(_normalizedTextPtr, _normalizedTextLength);
         }
 
-        public ReadOnlySpan<char> GetNormalizedText()
+        public override string ToString()
         {
-            return new ReadOnlySpan<char>(_normalizedTextPtr, _normalizedTextLength);
+            return Text ?? string.Empty;
         }
 
-        public ReadOnlySpan<char> GetOriginalText()
-        {
-            return new ReadOnlySpan<char>(_originalTextPtr, _originalTextLength);
-        }
+        #region IDisposable
 
         public void Dispose()
         {
@@ -148,20 +161,19 @@ namespace AsunaLibrary
                 return;
 
             _disposed = true;
-            _text = null;
-
-            if (_mAllocOriginalTextPtr != IntPtr.Zero)
-                Marshal.FreeHGlobal(_mAllocOriginalTextPtr);
+            _originalText = null;
 
             if (_mAllocNormalizedTextPtr != IntPtr.Zero)
                 Marshal.FreeHGlobal(_mAllocNormalizedTextPtr);
 
-            if (TotalAllocatedMemory > FIVE_MEGABYTES)
+            if (TotalAllocatedMemory > ONE_MEGABYTE)
                 GC.RemoveMemoryPressure(TotalAllocatedMemory);
 
-            if(disposing)
+            if (disposing)
                 GC.SuppressFinalize(this);
         }
+
+        #endregion
 
         ~TextBuffer()
         {

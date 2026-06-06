@@ -1,8 +1,8 @@
 ﻿namespace AsunaLocalSearch
 {
-    public struct FullTextSearchResult
+    public class FullTextSearchResult
     {
-        public readonly bool IsExactMatch => Ranking == 0;
+        public bool IsExactMatch => Ranking == 0;
         public string Match { get; internal set; }
         public int Index { get; internal set; }
         public int Length { get; internal set; }

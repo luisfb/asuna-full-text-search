@@ -10,14 +10,14 @@ namespace AsunaLocalSearch.Core
     //TODO Create unit tests for each method of this class
     internal static class Helpers
     {
-        private static Encoding _latin1_ISO_8859_1 = Encoding.GetEncoding(28591);
+        internal static Encoding Latin1_ISO_8859_1 = Encoding.GetEncoding(28591);
 
         internal static byte[] StringToByte(string text)
         {
             if (text == null)
                 throw new ArgumentNullException(nameof(text));
 
-            return _latin1_ISO_8859_1.GetBytes(text);
+            return Latin1_ISO_8859_1.GetBytes(text);
         }
 
         //TODO: Implement a better way, a more performatic algorithm, to remove diacritics/accents:
@@ -41,8 +41,8 @@ namespace AsunaLocalSearch.Core
 
         internal static string ConvertToLatin1(string text)
         {
-            var latin1_text = _latin1_ISO_8859_1.GetBytes(text);
-            return _latin1_ISO_8859_1.GetString(latin1_text);
+            var latin1_text = Latin1_ISO_8859_1.GetBytes(text);
+            return Latin1_ISO_8859_1.GetString(latin1_text);
         }
 
         internal static unsafe ReadOnlySpan<StringIndexAndLength> GetWordsPositions(ReadOnlySpan<char> str, int length)

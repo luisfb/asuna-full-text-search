@@ -23,7 +23,7 @@ namespace UnitTests
 
         private string WhenGetTextIsCalled(ITextBuffer textBuffer)
         {
-            return textBuffer.GetText();
+            return textBuffer.Text;
         }
 
         #endregion
@@ -39,7 +39,9 @@ namespace UnitTests
             ITextBuffer tb = GivenATextBufferFromFile();
             string textFromBuffer = WhenGetTextIsCalled(tb);
 
+            //Different reference:
             object.ReferenceEquals(originalText, textFromBuffer).Should().BeFalse();
+            //Same text:
             (originalText == textFromBuffer).Should().BeTrue();
 
         }

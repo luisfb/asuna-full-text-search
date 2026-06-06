@@ -8,6 +8,11 @@ namespace AsunaLocalSearch.Core
     {
         //TODO: NEW BENCHMARK:
 
+        internal static List<SearchResult> Search(ReadOnlySpan<byte> word, ReadOnlySpan<byte> text)
+        {
+            return Search(word, text);
+        }
+
         internal static List<SearchResult> Search(byte[] word, byte[] text)
         {
             int contentLength = text.Length;
