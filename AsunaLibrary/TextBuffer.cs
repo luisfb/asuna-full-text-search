@@ -54,9 +54,21 @@ namespace AsunaLocalSearch
 
         private void MAllocChars()
         {
-            byte[] normalizedText = Helpers.Latin1_ISO_8859_1.GetBytes(Helpers.RemoveDiacritics(_originalText).ToLowerInvariant());
+            string normalized = Helpers.RemoveDiacritics(_originalText).ToLowerInvariant();
 
-            //preciso dar throw exception se tiver algum caractere multi byte na string, senao o resultado da busca pode indicar um index errado.
+            // The whole design relies on a single byte per character (byte index == char index).
+            // Characters not representable in Latin1 (ISO-8859-1) would be silently replaced by '?'
+            // by the encoder, which would corrupt every search index. Reject them up front so the
+            // failure is loud instead of returning wrong positions later.
+            for (int i = 0; i < normalized.Length; i++)
+            {
+                if (normalized[i] > 0xFF)
+                    throw new ArgumentException(
+                        $"The text contains a character ('{normalized[i]}', U+{(int)normalized[i]:X4}) at position {i} that cannot be represented as a single byte (Latin1/ISO-8859-1) after normalization. Only single-byte-encodable text is supported.",
+                        "text");
+            }
+
+            byte[] normalizedText = Helpers.Latin1_ISO_8859_1.GetBytes(normalized);
 
             _normalizedTextLength = normalizedText.Length;
             _normalizedTextSizeInBytes = Marshal.SizeOf<byte>() * _normalizedTextLength;
@@ -68,13 +80,15 @@ namespace AsunaLocalSearch
                 GC.AddMemoryPressure(TotalAllocatedMemory);
         }
 
-        public static TextBuffer FromStream(Stream textStream)
+        public static TextBuffer FromStream(Stream textStream, Encoding encoding = null)
         {
-            //TODO: test if it will be needed to read the stream in UTF-8 and after that convert to latin1
+            if (encoding == null)
+                encoding = Encoding.UTF8;
+
             var buffer = ArrayPool<char>.Shared.Rent(2048);
             try
             {
-                using (var sr = new StreamReader(textStream, Helpers.Latin1_ISO_8859_1))
+                using (var sr = new StreamReader(textStream, encoding))
                 {
                     int read = 0;
                     int offset = 0;
@@ -127,7 +141,7 @@ namespace AsunaLocalSearch
                 encoding = Encoding.UTF8;
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                return FromStream(fs);
+                return FromStream(fs, encoding);
         }
 
         /// <summary>
@@ -153,6 +167,7 @@ namespace AsunaLocalSearch
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -164,13 +179,14 @@ namespace AsunaLocalSearch
             _originalText = null;
 
             if (_mAllocNormalizedTextPtr != IntPtr.Zero)
+            {
                 Marshal.FreeHGlobal(_mAllocNormalizedTextPtr);
+                _mAllocNormalizedTextPtr = IntPtr.Zero;
+                _normalizedTextPtr = null;
+            }
 
             if (TotalAllocatedMemory > ONE_MEGABYTE)
                 GC.RemoveMemoryPressure(TotalAllocatedMemory);
-
-            if (disposing)
-                GC.SuppressFinalize(this);
         }
 
         #endregion

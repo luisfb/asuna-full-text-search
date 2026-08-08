@@ -45,8 +45,8 @@ namespace AsunaLocalSearch.Indexes
 
             await t;
 
-            if (cancellationToken.IsCancellationRequested)
-                return await Task.FromResult(results);
+           /* if (cancellationToken.IsCancellationRequested)
+                return await Task.FromResult(results);*/
 
             results = results.OrderBy(x => x.PathHash).ToList();
 
@@ -79,8 +79,8 @@ namespace AsunaLocalSearch.Indexes
 
             await t;
 
-            if (cancellationToken.IsCancellationRequested)
-                return await Task.FromResult(results);
+          /*  if (cancellationToken.IsCancellationRequested)
+                return await Task.FromResult(results);*/
 
             ConcurrentDictionary<string, List<HashRecord>> index = new ConcurrentDictionary<string, List<HashRecord>>();
 
@@ -110,8 +110,8 @@ namespace AsunaLocalSearch.Indexes
 
                     //Path.Combine(f.Path, f.Filename)
                 });
-
-            return index;
+            return null;
+            //return index;
 
         }
     }
